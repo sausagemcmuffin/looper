@@ -1,0 +1,1171 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>LOOPSMITH</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Bebas+Neue&display=swap');
+
+:root {
+--bg: #0a0a0c;
+--surface: #111116;
+--surface2: #1a1a22;
+--accent: #e8ff47;
+--accent2: #ff4d6d;
+--accent3: #4dffd4;
+--text: #e8e8f0;
+--muted: #555568;
+--border: #2a2a38;
+--waveform-bg: #0d0d14;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+background: var(--bg);
+color: var(--text);
+font-family: 'Space Mono', monospace;
+min-height: 100vh;
+overflow-x: hidden;
+}
+
+/* ---- HEADER ---- */
+.header {
+display: flex;
+align-items: center;
+justify-content: space-between;
+padding: 16px 20px 8px;
+border-bottom: 1px solid var(--border);
+}
+.logo {
+font-family: 'Bebas Neue', sans-serif;
+font-size: 32px;
+letter-spacing: 4px;
+color: var(--accent);
+line-height: 1;
+}
+.logo span { color: var(--accent2); }
+.status-dot {
+width: 8px; height: 8px;
+border-radius: 50%;
+background: var(--muted);
+transition: background 0.3s;
+}
+.status-dot.active { background: var(--accent3); box-shadow: 0 0 8px var(--accent3); }
+
+/* ---- LOAD ZONE ---- */
+.load-zone {
+margin: 16px;
+border: 2px dashed var(--border);
+border-radius: 12px;
+padding: 28px 20px;
+text-align: center;
+background: var(--surface);
+cursor: pointer;
+transition: all 0.2s;
+position: relative;
+overflow: hidden;
+}
+.load-zone.has-file { border-style: solid; border-color: var(--accent); }
+.load-zone-label {
+font-size: 11px;
+letter-spacing: 2px;
+color: var(--muted);
+text-transform: uppercase;
+margin-bottom: 6px;
+}
+.load-zone-title {
+font-family: 'Bebas Neue', sans-serif;
+font-size: 22px;
+letter-spacing: 2px;
+color: var(--text);
+}
+.load-zone.has-file .load-zone-title { color: var(--accent); }
+.load-zone-label,
+.load-zone-title {
+position: relative;
+z-index: 1;
+pointer-events: none;
+}
+#fileInput {
+position: absolute;
+inset: 0;
+width: 100%;
+height: 100%;
+opacity: 0;
+cursor: pointer;
+z-index: 2;
+}
+
+/* ---- WAVEFORM ---- */
+.waveform-wrapper {
+margin: 0 16px;
+background: var(--waveform-bg);
+border-radius: 10px;
+border: 1px solid var(--border);
+overflow: hidden;
+position: relative;
+height: 110px;
+}
+#waveformCanvas {
+width: 100%;
+height: 100%;
+display: block;
+cursor: crosshair;
+touch-action: none;
+}
+.waveform-time {
+position: absolute;
+bottom: 6px;
+right: 10px;
+font-size: 10px;
+color: var(--muted);
+letter-spacing: 1px;
+pointer-events: none;
+}
+.waveform-pos {
+position: absolute;
+bottom: 6px;
+left: 10px;
+font-size: 10px;
+color: var(--accent3);
+letter-spacing: 1px;
+pointer-events: none;
+}
+
+/* ---- TRANSPORT ---- */
+.transport {
+display: flex;
+align-items: center;
+gap: 10px;
+padding: 14px 16px;
+justify-content: center;
+}
+.btn {
+background: var(--surface2);
+border: 1px solid var(--border);
+border-radius: 8px;
+color: var(--text);
+font-family: 'Space Mono', monospace;
+font-size: 11px;
+letter-spacing: 1px;
+padding: 10px 16px;
+cursor: pointer;
+transition: all 0.15s;
+text-transform: uppercase;
+white-space: nowrap;
+}
+.btn:active { transform: scale(0.96); opacity: 0.8; }
+.btn.primary {
+background: var(--accent);
+color: #0a0a0c;
+border-color: var(--accent);
+font-weight: 700;
+min-width: 80px;
+}
+.btn.danger { border-color: var(--accent2); color: var(--accent2); }
+.btn.success { border-color: var(--accent3); color: var(--accent3); }
+.btn:disabled { opacity: 0.3; cursor: default; }
+.btn-icon {
+font-size: 18px;
+padding: 10px 14px;
+}
+
+/* ---- SECTION LABEL ---- */
+.section-label {
+font-size: 10px;
+letter-spacing: 3px;
+color: var(--muted);
+text-transform: uppercase;
+padding: 0 16px;
+margin-bottom: 8px;
+margin-top: 4px;
+}
+
+/* ---- PITCH / SPEED SLIDERS ---- */
+.controls-grid {
+display: grid;
+grid-template-columns: 1fr 1fr;
+gap: 10px;
+padding: 0 16px;
+margin-bottom: 14px;
+}
+.control-card {
+background: var(--surface);
+border: 1px solid var(--border);
+border-radius: 10px;
+padding: 12px 14px;
+}
+.control-card-label {
+font-size: 9px;
+letter-spacing: 2px;
+color: var(--muted);
+text-transform: uppercase;
+margin-bottom: 8px;
+display: flex;
+justify-content: space-between;
+align-items: center;
+}
+.control-card-value {
+font-family: 'Bebas Neue', sans-serif;
+font-size: 26px;
+color: var(--accent);
+line-height: 1;
+margin-bottom: 8px;
+}
+.control-card.speed .control-card-value { color: var(--accent3); }
+input[type=range] {
+-webkit-appearance: none;
+width: 100%;
+height: 4px;
+background: var(--border);
+border-radius: 2px;
+outline: none;
+}
+input[type=range]::-webkit-slider-thumb {
+-webkit-appearance: none;
+width: 18px;
+height: 18px;
+border-radius: 50%;
+background: var(--accent);
+cursor: pointer;
+box-shadow: 0 0 6px rgba(232,255,71,0.4);
+}
+.speed input[type=range]::-webkit-slider-thumb {
+background: var(--accent3);
+box-shadow: 0 0 6px rgba(77,255,212,0.4);
+}
+.reset-btn {
+background: none;
+border: none;
+color: var(--muted);
+font-size: 9px;
+font-family: 'Space Mono', monospace;
+letter-spacing: 1px;
+cursor: pointer;
+padding: 0;
+}
+
+/* ---- LOOP POINTS ---- */
+.loop-section {
+background: var(--surface);
+border: 1px solid var(--border);
+border-radius: 10px;
+margin: 0 16px 14px;
+padding: 12px 14px;
+}
+.loop-header {
+display: flex;
+justify-content: space-between;
+align-items: center;
+margin-bottom: 12px;
+}
+.loop-header-label {
+font-size: 10px;
+letter-spacing: 2px;
+color: var(--muted);
+text-transform: uppercase;
+}
+.loop-active-badge {
+font-size: 9px;
+letter-spacing: 1px;
+background: var(--accent2);
+color: #fff;
+padding: 2px 8px;
+border-radius: 99px;
+text-transform: uppercase;
+display: none;
+}
+.loop-active-badge.on { display: inline-block; }
+.loop-times {
+display: grid;
+grid-template-columns: 1fr 1fr;
+gap: 8px;
+margin-bottom: 10px;
+}
+.loop-time-box {
+background: var(--waveform-bg);
+border: 1px solid var(--border);
+border-radius: 6px;
+padding: 8px 10px;
+}
+.loop-time-box label {
+font-size: 9px;
+letter-spacing: 1px;
+color: var(--muted);
+display: block;
+margin-bottom: 2px;
+}
+.loop-time-box .time-val {
+font-family: 'Bebas Neue', sans-serif;
+font-size: 22px;
+color: var(--text);
+line-height: 1;
+}
+.loop-time-box.in-point .time-val { color: var(--accent3); }
+.loop-time-box.out-point .time-val { color: var(--accent2); }
+.loop-btns { display: flex; gap: 8px; }
+
+/* ---- SAVED LOOPS ---- */
+.loops-list {
+padding: 0 16px;
+margin-bottom: 20px;
+}
+.loop-item {
+background: var(--surface);
+border: 1px solid var(--border);
+border-radius: 8px;
+padding: 10px 12px;
+margin-bottom: 8px;
+display: flex;
+align-items: center;
+gap: 10px;
+}
+.loop-item-name {
+flex: 1;
+font-size: 12px;
+font-family: 'Space Mono', monospace;
+color: var(--text);
+}
+.loop-item-duration {
+font-size: 10px;
+color: var(--muted);
+letter-spacing: 1px;
+min-width: 48px;
+text-align: right;
+}
+.loop-item-btns { display: flex; gap: 6px; }
+.icon-btn {
+background: none;
+border: none;
+cursor: pointer;
+font-size: 16px;
+padding: 4px;
+border-radius: 4px;
+transition: opacity 0.15s;
+}
+.icon-btn:active { opacity: 0.5; }
+
+/* ---- TOAST ---- */
+.toast {
+position: fixed;
+bottom: 30px;
+left: 50%;
+transform: translateX(-50%) translateY(80px);
+background: var(--accent);
+color: #0a0a0c;
+font-size: 11px;
+font-family: 'Space Mono', monospace;
+letter-spacing: 1px;
+padding: 10px 20px;
+border-radius: 99px;
+transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+z-index: 999;
+pointer-events: none;
+white-space: nowrap;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+/* ---- DIVIDER ---- */
+.divider { height: 1px; background: var(--border); margin: 10px 16px; }
+
+/* ---- EMPTY STATE ---- */
+.empty-state {
+text-align: center;
+padding: 20px;
+color: var(--muted);
+font-size: 11px;
+letter-spacing: 1px;
+}
+
+/* ---- NO FILE OVERLAY ---- */
+.no-file-msg {
+text-align: center;
+padding: 30px 20px;
+color: var(--muted);
+font-size: 11px;
+letter-spacing: 1px;
+}
+
+.spinner {
+display: inline-block;
+width: 14px; height: 14px;
+border: 2px solid var(--border);
+border-top-color: var(--accent);
+border-radius: 50%;
+animation: spin 0.7s linear infinite;
+vertical-align: middle;
+margin-right: 6px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.progress-bar {
+height: 2px;
+background: var(--border);
+margin: 0 16px 12px;
+border-radius: 1px;
+overflow: hidden;
+}
+.progress-fill {
+height: 100%;
+background: var(--accent);
+width: 0%;
+transition: width 0.1s linear;
+}
+
+/* pitch note indicator */
+.pitch-note {
+font-size: 9px;
+color: var(--muted);
+letter-spacing: 1px;
+margin-top: 2px;
+}
+</style>
+
+</head>
+<body>
+
+<!-- HEADER -->
+
+<div class="header">
+  <div class="logo">LOOP<span>SMITH</span></div>
+  <div class="status-dot" id="statusDot"></div>
+</div>
+
+<!-- LOAD ZONE -->
+
+<label class="load-zone" id="loadZone">
+  <div class="load-zone-label">Tap to load audio</div>
+  <div class="load-zone-title" id="loadZoneTitle">＋ DROP AUDIO FILE</div>
+  <input type="file" id="fileInput" accept="audio/*,.mp3,.wav,.m4a,.aac,.aif,.aiff,.flac,.ogg,.opus">
+</label>
+
+<!-- WAVEFORM -->
+
+<div class="waveform-wrapper" id="waveformWrapper">
+  <canvas id="waveformCanvas"></canvas>
+  <div class="waveform-pos" id="waveformPos">0:00.000</div>
+  <div class="waveform-time" id="waveformTime">0:00.000</div>
+</div>
+
+<!-- PROGRESS BAR -->
+
+<div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+
+<!-- TRANSPORT -->
+
+<div class="transport">
+  <button class="btn btn-icon" id="btnSkipBack" disabled title="Skip to start">⏮</button>
+  <button class="btn primary btn-icon" id="btnPlayPause" disabled>▶</button>
+  <button class="btn btn-icon" id="btnStop" disabled title="Stop">⏹</button>
+  <button class="btn btn-icon danger" id="btnLoop" disabled title="Toggle loop">🔁</button>
+</div>
+
+<!-- PITCH / SPEED -->
+
+<div class="section-label">PITCH &amp; SPEED</div>
+<div class="controls-grid">
+  <div class="control-card pitch">
+    <div class="control-card-label">
+      <span>Pitch</span>
+      <button class="reset-btn" id="resetPitch">RESET</button>
+    </div>
+    <div class="control-card-value" id="pitchVal">0 st</div>
+    <div class="pitch-note" id="pitchNote">original key</div>
+    <input type="range" id="pitchSlider" min="-12" max="12" step="1" value="0">
+  </div>
+  <div class="control-card speed">
+    <div class="control-card-label">
+      <span>Speed</span>
+      <button class="reset-btn" id="resetSpeed">RESET</button>
+    </div>
+    <div class="control-card-value" id="speedVal">1.00×</div>
+    <div class="pitch-note" id="speedNote">normal tempo</div>
+    <input type="range" id="speedSlider" min="0.25" max="2" step="0.05" value="1">
+  </div>
+</div>
+
+<!-- LOOP POINTS -->
+
+<div class="section-label">LOOP REGION</div>
+<div class="loop-section">
+  <div class="loop-header">
+    <span class="loop-header-label">In / Out Points</span>
+    <span class="loop-active-badge" id="loopBadge">LOOP ON</span>
+  </div>
+  <div class="loop-times">
+    <div class="loop-time-box in-point">
+      <label>IN</label>
+      <div class="time-val" id="inPointVal">—</div>
+    </div>
+    <div class="loop-time-box out-point">
+      <label>OUT</label>
+      <div class="time-val" id="outPointVal">—</div>
+    </div>
+  </div>
+  <div class="loop-btns">
+    <button class="btn" id="btnSetIn" disabled style="flex:1">SET IN</button>
+    <button class="btn" id="btnSetOut" disabled style="flex:1">SET OUT</button>
+    <button class="btn danger" id="btnClearLoop" disabled>✕</button>
+  </div>
+</div>
+
+<!-- SAVE LOOP -->
+
+<div style="padding: 0 16px; margin-bottom: 14px; display:flex; gap:8px;">
+  <button class="btn success" id="btnSaveLoop" disabled style="flex:1">＋ SAVE LOOP</button>
+  <button class="btn" id="btnExportAll" disabled style="flex:1">⬇ EXPORT ALL</button>
+</div>
+
+<div class="divider"></div>
+<div class="section-label">SAVED LOOPS</div>
+
+<!-- LOOPS LIST -->
+
+<div class="loops-list" id="loopsList">
+  <div class="empty-state" id="emptyState">No loops saved yet.</div>
+</div>
+
+<!-- TOAST -->
+
+<div class="toast" id="toast"></div>
+
+<!-- lamejs for MP3 encoding -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.0/lame.min.js"></script>
+
+<script>
+// =====================================================
+// LOOPSMITH - Audio Loop Tool
+// =====================================================
+
+const $ = id => document.getElementById(id);
+
+// ---- STATE ----
+let audioCtx = null;
+let audioBuffer = null;
+let sourceNode = null;
+let isPlaying = false;
+let loopEnabled = false;
+let startOffset = 0;
+let startTime = 0;
+let currentPosition = 0;
+let animFrame = null;
+let inPoint = null;
+let outPoint = null;
+let savedLoops = [];
+let pitchSemitones = 0;
+let playbackRate = 1.0;
+let activeRate = 1.0;
+let playToken = 0;
+let fileName = '';
+let duration = 0;
+let isDragging = false;
+
+// ---- INIT ----
+function ensureAudioCtx() {
+  const AudioCtor = window.AudioContext || window.webkitAudioContext;
+  if (!AudioCtor) throw new Error('Web Audio is not supported in this browser');
+  if (!audioCtx) audioCtx = new AudioCtor();
+  return audioCtx;
+}
+
+async function resumeAudioCtx() {
+  const ctx = ensureAudioCtx();
+  if (ctx.state === 'suspended') await ctx.resume();
+  return ctx;
+}
+
+function decodeAudioDataCompat(ctx, arrayBuffer) {
+  return new Promise((resolve, reject) => {
+    const promise = ctx.decodeAudioData(arrayBuffer.slice(0), resolve, reject);
+    if (promise && typeof promise.then === 'function') promise.then(resolve, reject);
+  });
+}
+
+function getEffectiveRate() {
+  return playbackRate * Math.pow(2, pitchSemitones / 12);
+}
+
+function clampPosition(t) {
+  return Math.max(0, Math.min(t || 0, duration || 0));
+}
+
+// ---- FILE LOADING ----
+$('fileInput').addEventListener('change', e => {
+  const file = e.target.files[0];
+  e.target.value = '';
+  if (file) loadAudioFile(file);
+});
+
+async function loadAudioFile(file) {
+  stop();
+  const ctx = ensureAudioCtx();
+  fileName = file.name.replace(/\.[^.]+$/, '');
+  $('loadZoneTitle').innerHTML = '<span class="spinner"></span>Loading...';
+  const ab = await file.arrayBuffer();
+  try {
+    audioBuffer = await decodeAudioDataCompat(ctx, ab);
+    duration = audioBuffer.duration;
+    startOffset = 0;
+    currentPosition = 0;
+    $('loadZone').classList.add('has-file');
+    $('loadZoneTitle').textContent = fileName;
+    $('statusDot').classList.add('active');
+    drawWaveform();
+    enableControls();
+    inPoint = null; outPoint = null;
+    updateLoopUI();
+    updateTimeDisplay(0);
+    $('waveformTime').textContent = formatTime(duration);
+    showToast('LOADED: ' + fileName);
+  } catch(err) {
+    $('loadZoneTitle').textContent = '✕ DECODE ERROR';
+    showToast('Could not decode audio file');
+    console.error(err);
+  }
+}
+
+function enableControls() {
+  ['btnPlayPause','btnStop','btnSkipBack','btnLoop','btnSetIn','btnSetOut','btnSaveLoop'].forEach(id => $(id).disabled = false);
+}
+
+// ---- WAVEFORM ----
+function drawWaveform() {
+  const canvas = $('waveformCanvas');
+  const wrapper = $('waveformWrapper');
+  const dpr = window.devicePixelRatio || 1;
+  const W = wrapper.clientWidth;
+  const H = wrapper.clientHeight;
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  renderWaveform(ctx, W, H);
+}
+
+function renderWaveform(ctx, W, H) {
+  if (!audioBuffer) return;
+  ctx.clearRect(0, 0, W, H);
+
+  // Background
+  ctx.fillStyle = '#0d0d14';
+  ctx.fillRect(0, 0, W, H);
+
+  // Loop region highlight
+  if (inPoint !== null && outPoint !== null) {
+    const x1 = (inPoint / duration) * W;
+    const x2 = (outPoint / duration) * W;
+    ctx.fillStyle = 'rgba(232,255,71,0.08)';
+    ctx.fillRect(x1, 0, x2 - x1, H);
+    ctx.strokeStyle = 'rgba(232,255,71,0.3)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x1, 0); ctx.lineTo(x1, H); ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,77,109,0.4)';
+    ctx.beginPath(); ctx.moveTo(x2, 0); ctx.lineTo(x2, H); ctx.stroke();
+  }
+
+  // Waveform bars
+  const data = audioBuffer.getChannelData(0);
+  const step = Math.ceil(data.length / W);
+  const mid = H / 2;
+
+  for (let x = 0; x < W; x++) {
+    let min = 1, max = -1;
+    const s = x * step;
+    for (let j = 0; j < step; j++) {
+      const v = data[s + j] || 0;
+      if (v < min) min = v;
+      if (v > max) max = v;
+    }
+    const progress = isPlaying ? currentPosition / duration : (startOffset / duration);
+    const isPast = (x / W) < progress;
+    ctx.strokeStyle = isPast ? '#e8ff47' : '#2a3a4a';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(x + 0.5, mid + min * mid * 0.9);
+    ctx.lineTo(x + 0.5, mid + max * mid * 0.9);
+    ctx.stroke();
+  }
+
+  // Playhead
+  const ph = isPlaying ? currentPosition / duration : startOffset / duration;
+  const px = ph * W;
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(px, 0); ctx.lineTo(px, H); ctx.stroke();
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath(); ctx.arc(px, H/2, 4, 0, Math.PI*2); ctx.fill();
+}
+
+// ---- PLAYBACK ----
+$('btnPlayPause').addEventListener('click', async () => {
+  try {
+    await resumeAudioCtx();
+    if (isPlaying) pause(); else play();
+  } catch (err) {
+    showToast('Audio is not available in this browser');
+    console.error(err);
+  }
+});
+$('btnStop').addEventListener('click', stop);
+$('btnSkipBack').addEventListener('click', skipBack);
+$('btnLoop').addEventListener('click', toggleLoop);
+
+function play() {
+  if (!audioBuffer) return;
+  if (sourceNode) {
+    try { sourceNode.stop(); } catch(e) {}
+    sourceNode.disconnect();
+    sourceNode = null;
+  }
+
+  sourceNode = audioCtx.createBufferSource();
+  sourceNode.buffer = audioBuffer;
+  sourceNode.playbackRate.value = playbackRate;
+
+  // Pitch shift via detune (semitones * 100 cents)
+  sourceNode.detune.value = pitchSemitones * 100;
+
+  // Loop points are stored in decoded buffer seconds.
+  if (loopEnabled && inPoint !== null && outPoint !== null) {
+    sourceNode.loop = true;
+    sourceNode.loopStart = inPoint;
+    sourceNode.loopEnd = outPoint;
+  }
+
+  sourceNode.connect(audioCtx.destination);
+
+  let offset = startOffset;
+  if (loopEnabled && inPoint !== null && outPoint !== null) {
+    if (offset < inPoint || offset >= outPoint) offset = inPoint;
+  }
+  offset = clampPosition(offset);
+  startOffset = offset;
+  currentPosition = offset;
+  activeRate = getEffectiveRate();
+  startTime = audioCtx.currentTime;
+
+  const token = ++playToken;
+  sourceNode.start(0, offset);
+
+  isPlaying = true;
+  $('btnPlayPause').textContent = '⏸';
+
+  sourceNode.onended = () => {
+    if (token === playToken && isPlaying && !sourceNode.loop) {
+      isPlaying = false;
+      startOffset = 0;
+      currentPosition = 0;
+      $('btnPlayPause').textContent = '▶';
+      cancelAnimationFrame(animFrame);
+      drawWaveform();
+      updateTimeDisplay(0);
+    }
+  };
+
+  animate();
+}
+
+function pause() {
+  if (!isPlaying) return;
+  startOffset = getCurrentPos();
+  playToken++;
+  if (sourceNode) { sourceNode.stop(); sourceNode.disconnect(); sourceNode = null; }
+  isPlaying = false;
+  $('btnPlayPause').textContent = '▶';
+  cancelAnimationFrame(animFrame);
+  drawWaveform();
+}
+
+function stop() {
+  playToken++;
+  if (sourceNode) { try { sourceNode.stop(); } catch(e) {} sourceNode.disconnect(); sourceNode = null; }
+  isPlaying = false;
+  startOffset = 0;
+  $('btnPlayPause').textContent = '▶';
+  cancelAnimationFrame(animFrame);
+  currentPosition = 0;
+  drawWaveform();
+  updateTimeDisplay(0);
+}
+
+function skipBack() {
+  const wasPlaying = isPlaying;
+  stop();
+  if (loopEnabled && inPoint !== null) startOffset = inPoint;
+  if (wasPlaying) play();
+}
+
+function toggleLoop() {
+  loopEnabled = !loopEnabled;
+  $('btnLoop').style.color = loopEnabled ? 'var(--accent3)' : '';
+  $('loopBadge').classList.toggle('on', loopEnabled);
+  if (isPlaying) restartPlayback(getCurrentPos());
+}
+
+function getCurrentPos() {
+  if (!isPlaying) return startOffset;
+  const elapsed = (audioCtx.currentTime - startTime) * activeRate;
+  if (loopEnabled && inPoint !== null && outPoint !== null) {
+    const loopLen = outPoint - inPoint;
+    if (loopLen <= 0) return inPoint;
+    return inPoint + ((startOffset - inPoint + elapsed) % loopLen);
+  }
+  return Math.min(startOffset + elapsed, duration);
+}
+
+function restartPlayback(offset) {
+  const shouldPlay = isPlaying;
+  playToken++;
+  if (sourceNode) {
+    try { sourceNode.stop(); } catch(e) {}
+    sourceNode.disconnect();
+    sourceNode = null;
+  }
+  isPlaying = false;
+  startOffset = clampPosition(offset);
+  currentPosition = startOffset;
+  if (shouldPlay) play();
+  else {
+    drawWaveform();
+    updateTimeDisplay(startOffset);
+  }
+}
+
+function animate() {
+  animFrame = requestAnimationFrame(() => {
+    currentPosition = getCurrentPos();
+    updateTimeDisplay(currentPosition);
+    const canvas = $('waveformCanvas');
+    const W = canvas.clientWidth;
+    const H = canvas.clientHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(window.devicePixelRatio||1,0,0,window.devicePixelRatio||1,0,0);
+    renderWaveform(ctx, W, H);
+    const pct = (currentPosition / duration) * 100;
+    $('progressFill').style.width = pct + '%';
+    if (isPlaying) animate();
+  });
+}
+
+// ---- PITCH / SPEED ----
+$('pitchSlider').addEventListener('input', function() {
+  const pos = isPlaying ? getCurrentPos() : startOffset;
+  pitchSemitones = parseInt(this.value);
+  $('pitchVal').textContent = pitchSemitones + ' st';
+  if (pitchSemitones === 0) {
+    $('pitchNote').textContent = 'original key';
+  } else {
+    $('pitchNote').textContent = (pitchSemitones > 0 ? '▲ ' : '▼ ') + Math.abs(pitchSemitones) + ' semitone' + (Math.abs(pitchSemitones)>1?'s':'');
+  }
+  if (isPlaying) {
+    startOffset = pos;
+    currentPosition = pos;
+    startTime = audioCtx.currentTime;
+    activeRate = getEffectiveRate();
+    if (sourceNode) sourceNode.detune.setValueAtTime(pitchSemitones * 100, audioCtx.currentTime);
+  }
+});
+
+$('speedSlider').addEventListener('input', function() {
+  const pos = isPlaying ? getCurrentPos() : startOffset;
+  playbackRate = parseFloat(this.value);
+  $('speedVal').textContent = playbackRate.toFixed(2) + '×';
+  if (playbackRate < 0.7) $('speedNote').textContent = 'slowed down';
+  else if (playbackRate > 1.3) $('speedNote').textContent = 'sped up';
+  else $('speedNote').textContent = 'normal tempo';
+  if (isPlaying && sourceNode) {
+    startOffset = pos;
+    currentPosition = pos;
+    startTime = audioCtx.currentTime;
+    activeRate = getEffectiveRate();
+    sourceNode.playbackRate.setValueAtTime(playbackRate, audioCtx.currentTime);
+  }
+});
+
+$('resetPitch').addEventListener('click', () => {
+  $('pitchSlider').value = 0;
+  $('pitchSlider').dispatchEvent(new Event('input'));
+});
+$('resetSpeed').addEventListener('click', () => {
+  $('speedSlider').value = 1;
+  $('speedSlider').dispatchEvent(new Event('input'));
+});
+
+// ---- LOOP POINTS ----
+$('btnSetIn').addEventListener('click', () => {
+  inPoint = getCurrentPos();
+  if (outPoint !== null && outPoint - inPoint < 0.015) outPoint = null;
+  updateLoopUI();
+  drawWaveform();
+  showToast('IN POINT SET: ' + formatTime(inPoint));
+  if (inPoint !== null && outPoint !== null) {
+    $('btnClearLoop').disabled = false;
+    $('btnSaveLoop').disabled = false;
+    $('btnExportAll').disabled = false;
+  }
+});
+
+$('btnSetOut').addEventListener('click', async () => {
+  outPoint = getCurrentPos();
+  if (inPoint !== null && outPoint - inPoint < 0.015) inPoint = null;
+  updateLoopUI();
+  drawWaveform();
+  showToast('OUT POINT SET: ' + formatTime(outPoint));
+  if (inPoint !== null && outPoint !== null) {
+    $('btnClearLoop').disabled = false;
+    $('btnSaveLoop').disabled = false;
+    $('btnExportAll').disabled = false;
+    // Auto-enable loop and restart from in point
+    loopEnabled = true;
+    $('btnLoop').style.color = 'var(--accent3)';
+    $('loopBadge').classList.add('on');
+    if (isPlaying) { pause(); }
+    startOffset = inPoint;
+    await resumeAudioCtx();
+    play();
+  }
+});
+
+$('btnClearLoop').addEventListener('click', () => {
+  inPoint = null; outPoint = null;
+  loopEnabled = false;
+  $('btnLoop').style.color = '';
+  $('loopBadge').classList.remove('on');
+  updateLoopUI();
+  drawWaveform();
+  $('btnClearLoop').disabled = true;
+  $('btnSaveLoop').disabled = true;
+});
+
+function updateLoopUI() {
+  $('inPointVal').textContent = inPoint !== null ? formatTime(inPoint) : '—';
+  $('outPointVal').textContent = outPoint !== null ? formatTime(outPoint) : '—';
+  $('loopBadge').classList.toggle('on', loopEnabled);
+}
+
+// ---- WAVEFORM TOUCH/CLICK SEEK ----
+const wfCanvas = $('waveformCanvas');
+
+function seekFromEvent(e) {
+  if (!audioBuffer) return;
+  const rect = wfCanvas.getBoundingClientRect();
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+  const x = Math.max(0, Math.min(clientX - rect.left, rect.width));
+  const t = (x / rect.width) * duration;
+  startOffset = t;
+  if (isPlaying) restartPlayback(t);
+  else { currentPosition = t; drawWaveform(); updateTimeDisplay(t); }
+}
+
+wfCanvas.addEventListener('mousedown', e => { isDragging = true; seekFromEvent(e); });
+wfCanvas.addEventListener('mousemove', e => { if (isDragging) seekFromEvent(e); });
+wfCanvas.addEventListener('mouseup', () => isDragging = false);
+wfCanvas.addEventListener('touchstart', e => { e.preventDefault(); isDragging = true; seekFromEvent(e); }, {passive:false});
+wfCanvas.addEventListener('touchmove', e => { e.preventDefault(); if(isDragging) seekFromEvent(e); }, {passive:false});
+wfCanvas.addEventListener('touchend', () => isDragging = false);
+
+// ---- SAVE LOOP ----
+$('btnSaveLoop').addEventListener('click', saveLoop);
+
+function saveLoop() {
+  if (inPoint === null || outPoint === null) return showToast('Set IN and OUT first');
+  const name = fileName + '_loop' + (savedLoops.length + 1).toString().padStart(2,'0');
+  const loop = {
+    id: Date.now(),
+    name,
+    in: inPoint,
+    out: outPoint,
+    pitch: pitchSemitones,
+    speed: playbackRate,
+    duration: outPoint - inPoint
+  };
+  savedLoops.push(loop);
+  renderLoops();
+  $('btnExportAll').disabled = false;
+  showToast('SAVED: ' + name);
+}
+
+function renderLoops() {
+  const list = $('loopsList');
+  if (savedLoops.length === 0) {
+    list.innerHTML = '<div class="empty-state" id="emptyState">No loops saved yet.</div>';
+    return;
+  }
+  list.innerHTML = savedLoops.map((loop, i) => `
+    <div class="loop-item" id="loop-${loop.id}">
+      <div class="loop-item-name">${loop.name}<br>
+        <span style="font-size:9px;color:var(--muted)">
+          ${loop.pitch !== 0 ? (loop.pitch > 0 ? '+' : '') + loop.pitch + 'st ' : ''}
+          ${loop.speed !== 1 ? loop.speed.toFixed(2) + '× ' : ''}
+        </span>
+      </div>
+      <div class="loop-item-duration">${formatTime(loop.duration)}</div>
+      <div class="loop-item-btns">
+        <button class="icon-btn" onclick="playLoop(${loop.id})" title="Preview">▶</button>
+        <button class="icon-btn" style="color:var(--accent3)" onclick="exportLoop(${loop.id})" title="Export MP3">⬇</button>
+        <button class="icon-btn" style="color:var(--accent2)" onclick="deleteLoop(${loop.id})" title="Delete">✕</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function playLoop(id) {
+  const loop = savedLoops.find(l => l.id === id);
+  if (!loop) return;
+  await resumeAudioCtx();
+  inPoint = loop.in; outPoint = loop.out;
+  pitchSemitones = loop.pitch; playbackRate = loop.speed;
+  $('pitchSlider').value = pitchSemitones;
+  $('speedSlider').value = playbackRate;
+  $('pitchSlider').dispatchEvent(new Event('input'));
+  $('speedSlider').dispatchEvent(new Event('input'));
+  loopEnabled = true;
+  $('btnLoop').style.color = 'var(--accent3)';
+  $('loopBadge').classList.add('on');
+  startOffset = loop.in;
+  updateLoopUI(); drawWaveform();
+  if (isPlaying) { pause(); }
+  play();
+}
+
+function deleteLoop(id) {
+  savedLoops = savedLoops.filter(l => l.id !== id);
+  renderLoops();
+  if (savedLoops.length === 0) $('btnExportAll').disabled = true;
+  showToast('LOOP DELETED');
+}
+
+// ---- EXPORT MP3 ----
+async function exportLoop(id) {
+  const loop = savedLoops.find(l => l.id === id);
+  if (!loop) return;
+  showToast('RENDERING MP3...');
+  await renderLoopToMp3(loop);
+}
+
+$('btnExportAll').addEventListener('click', async () => {
+  if (savedLoops.length === 0) return;
+  showToast('EXPORTING ALL LOOPS...');
+  for (const loop of savedLoops) {
+    await renderLoopToMp3(loop);
+    await new Promise(r => setTimeout(r, 300));
+  }
+  showToast('ALL LOOPS EXPORTED');
+});
+
+async function renderLoopToMp3(loop) {
+  // Create offline context
+  const sampleRate = audioBuffer.sampleRate;
+  const effectiveRate = loop.speed * Math.pow(2, loop.pitch / 12);
+  const loopDuration = (loop.out - loop.in) / effectiveRate;
+  const frameCount = Math.ceil(loopDuration * sampleRate);
+
+  const offlineCtx = new OfflineAudioContext(2, frameCount, sampleRate);
+  const src = offlineCtx.createBufferSource();
+  src.buffer = audioBuffer;
+  src.playbackRate.value = loop.speed;
+  src.detune.value = loop.pitch * 100;
+  src.connect(offlineCtx.destination);
+  src.start(0, loop.in, loopDuration);
+
+  const rendered = await offlineCtx.startRendering();
+
+  // Encode to MP3 using lamejs
+  const mp3Data = encodeToMp3(rendered);
+  const blob = new Blob(mp3Data, { type: 'audio/mp3' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = loop.name + '.mp3';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+  showToast('EXPORTED: ' + loop.name + '.mp3');
+}
+
+function encodeToMp3(buffer) {
+  const channels = Math.min(buffer.numberOfChannels, 2);
+  const sampleRate = buffer.sampleRate;
+  const mp3enc = new lamejs.Mp3Encoder(channels, sampleRate, 128);
+  const blockSize = 1152;
+  const mp3Data = [];
+
+  const left = buffer.getChannelData(0);
+  const right = channels > 1 ? buffer.getChannelData(1) : left;
+
+  // Convert float to int16
+  function floatToInt16(buf) {
+    const out = new Int16Array(buf.length);
+    for (let i = 0; i < buf.length; i++) {
+      let s = Math.max(-1, Math.min(1, buf[i]));
+      out[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+    }
+    return out;
+  }
+
+  const leftInt = floatToInt16(left);
+  const rightInt = channels > 1 ? floatToInt16(right) : leftInt;
+
+  for (let i = 0; i < leftInt.length; i += blockSize) {
+    const lChunk = leftInt.subarray(i, i + blockSize);
+    const rChunk = rightInt.subarray(i, i + blockSize);
+    let enc;
+    if (channels === 2) {
+      enc = mp3enc.encodeBuffer(lChunk, rChunk);
+    } else {
+      enc = mp3enc.encodeBuffer(lChunk);
+    }
+    if (enc.length > 0) mp3Data.push(enc);
+  }
+  const end = mp3enc.flush();
+  if (end.length > 0) mp3Data.push(end);
+  return mp3Data;
+}
+
+// ---- UTILS ----
+function formatTime(s) {
+  if (s === null || isNaN(s)) return '-';
+  const m = Math.floor(s / 60);
+  const sec = Math.floor(s % 60);
+  const ms = Math.floor((s % 1) * 1000);
+  return m + ':' + sec.toString().padStart(2,'0') + '.' + ms.toString().padStart(3,'0');
+}
+
+function updateTimeDisplay(t) {
+  $('waveformPos').textContent = formatTime(t);
+  const pct = duration ? (t / duration) * 100 : 0;
+  $('progressFill').style.width = pct + '%';
+}
+
+function showToast(msg) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ---- DRAG AND DROP (desktop) ----
+document.addEventListener('dragover', e => e.preventDefault());
+document.addEventListener('drop', e => {
+  e.preventDefault();
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('audio/')) loadAudioFile(file);
+});
+
+// ---- RESIZE ----
+window.addEventListener('resize', () => { if (audioBuffer) drawWaveform(); });
+
+// Initial state
+renderLoops();
+</script>
+
+</body>
+</html>
